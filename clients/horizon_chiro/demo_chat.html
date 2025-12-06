@@ -204,12 +204,7 @@
     </div>
 
     <div class="chat-input-area">
-      <input
-        id="chatInput"
-        class="chat-input"
-        type="text"
-        placeholder="Type a message and press Enter..."
-      />
+      <input id="chatInput" class="chat-input" type="text" placeholder="Type a message and press Enter..." />
       <button id="sendBtn" class="send-btn">Send</button>
     </div>
   </div>
@@ -220,85 +215,30 @@
     const sendBtn = document.getElementById("sendBtn");
     const leadBtn = document.getElementById("leadBtn");
 
-    // ✅ Track whether we've already captured a lead in this session
     let hasLead = false;
 
-// Smarter check: only start lead flow when they clearly want to book/change/cancel
-function shouldStartLeadFlow(lower) {
-  // e.g. "make an appointment", "schedule a cleaning", "book a visit"
-  const intentVerbs = [
-    "make",
-    "schedule",
-    "book",
-    "set up",
-    "set one up",
-    "arrange",
-    "reschedule",
-    "move my",
-    "change my",
-    "cancel my",
-    "cancel an",
-  ];
+    function shouldStartLeadFlow(lower) {
+      const intentVerbs = ["make", "schedule", "book", "set up", "set one up", "arrange", "reschedule", "move my", "change my", "cancel my", "cancel an"];
+      const appointmentWords = ["appointment", "appt", "appts", "cleaning", "consultation", "checkup", "visit"];
 
-  const appointmentWords = [
-    "appointment",
-    "appt",
-    "appts",
-    "cleaning",
-    "consultation",
-    "checkup",
-    "visit",
-  ];
+      const wantsInfoPhrases = [
+        "take my info", "take my information", "leave my info", "leave info",
+        "give you my info", "give u my info", "give my info",
+        "have someone call", "have somebody call", "have the office call",
+        "call me back", "call me about this", "call me please",
+        "can someone call me", "can somebody call me",
+      ];
 
-  // Very explicit "take my info / call me" style phrases
-  const wantsInfoPhrases = [
-    "take my info",
-    "take my information",
-    "leave my info",
-    "leave info",
-    "give you my info",
-    "give u my info",
-    "give my info",
-    "have someone call",
-    "have somebody call",
-    "have the office call",
-    "call me back",
-    "call me about this",
-    "call me please",
-    "can someone call me",
-    "can somebody call me",
-  ];
+      if (wantsInfoPhrases.some((p) => lower.includes(p))) return true;
 
-  // If they literally say these, just start lead flow
-  if (wantsInfoPhrases.some((p) => lower.includes(p))) {
-    return true;
-  }
+      const hasVerb = intentVerbs.some((v) => lower.includes(v));
+      const hasApptWord = appointmentWords.some((w) => lower.includes(w));
 
-  // Otherwise, require BOTH:
-  //  - an intent verb (make/schedule/book/reschedule/etc)
-  //  - AND an appointment-type word (appointment/appt/cleaning/visit/etc)
-  const hasVerb = intentVerbs.some((v) => lower.includes(v));
-  const hasApptWord = appointmentWords.some((w) => lower.includes(w));
+      return hasVerb && hasApptWord;
+    }
 
-  if (hasVerb && hasApptWord) {
-    return true;
-  }
-
-  return false;
-}
-
-    // Lead conversation state
-    // leadMode:
-    //  "idle"          -> normal chat
-    //  "collect_name"  -> waiting for name
-    //  "collect_email" -> waiting for email
-    //  "collect_msg"   -> waiting for what they need
     let leadMode = "idle";
-    let leadDraft = {
-      name: "",
-      email: "",
-      message: ""
-    };
+    let leadDraft = { name: "", email: "", message: "" };
 
     function addMessage(text, sender = "bot") {
       const row = document.createElement("div");
@@ -314,7 +254,6 @@ function shouldStartLeadFlow(lower) {
     }
 
     async function sendToBackend(userText) {
-      // "Thinking..." bubble
       const typingRow = document.createElement("div");
       typingRow.className = "message-row bot";
       const typingBubble = document.createElement("div");
@@ -325,32 +264,20 @@ function shouldStartLeadFlow(lower) {
       messagesEl.scrollTop = messagesEl.scrollHeight;
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/chat", {
+const response = await fetch("https://second-client-test-production.up.railway.app/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: userText })
         });
 
         messagesEl.removeChild(typingRow);
 
-        if (!response.ok) {
-          addMessage("Backend error. (Response not OK)", "bot");
-          return;
-        }
-
         const data = await response.json();
         const reply = data.reply || "No reply from backend.";
 
-        // If backend wants to start the lead flow, do that instead of printing the magic string
         if (reply === "__TRIGGER_LEAD_FLOW__") {
-          // If we already have lead info, don't start over unless they really insist
           if (hasLead) {
-            addMessage(
-              "I already have your contact details on file. If something has changed, just tell me what’s new and I’ll pass it along.",
-              "bot"
-            );
+            addMessage("I already have your contact details on file. If something has changed, just tell me what’s new and I’ll pass it along.", "bot");
           } else {
             startLeadFlow();
           }
@@ -360,63 +287,35 @@ function shouldStartLeadFlow(lower) {
         addMessage(reply, "bot");
       } catch (err) {
         messagesEl.removeChild(typingRow);
-        console.error(err);
         addMessage("Error connecting to backend.", "bot");
       }
     }
 
     async function sendLeadToBackend(lead) {
       try {
-        const res = await fetch("http://127.0.0.1:8000/lead", {
+const res = await fetch("https://second-client-test-production.up.railway.app/lead", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(lead)
         });
 
-        if (!res.ok) {
-          addMessage(
-            "There was an issue sending your details. Please call the office directly.",
-            "bot"
-          );
-          return;
-        }
-
-        // ✅ Mark that we now have a lead for this session
         hasLead = true;
-
-        addMessage(
-          "Got it — we’ve sent your details to the office. They’ll reach out as soon as possible. 📞",
-          "bot"
-        );
-      } catch (err) {
-        console.error(err);
-        addMessage(
-          "There was an issue sending your details. Please call the office directly.",
-          "bot"
-        );
+        addMessage("Got it — we’ve sent your details to the office. They’ll reach out as soon as possible. 📞", "bot");
+      } catch {
+        addMessage("There was an issue sending your details. Please call the office directly.", "bot");
       }
     }
 
     function startLeadFlow() {
-      // If we already collected info, don't ask again unless they explicitly type "info"
       if (hasLead) {
-        addMessage(
-          "I already have your contact details saved. If you just have a question, go ahead and ask it here 😊",
-          "bot"
-        );
+        addMessage("I already have your contact details saved. If you just have a question, go ahead and ask it here 😊", "bot");
         return;
       }
 
-      // Reset draft and start with name
       leadDraft = { name: "", email: "", message: "" };
       leadMode = "collect_name";
 
-      addMessage(
-        "Sure — I can take a few details so the office can reach out to you. If you'd rather not share info, you can type “skip” any time.",
-        "bot"
-      );
+      addMessage("Sure — I can take a few details so the office can reach out to you. If you'd rather not share info, you can type “skip” any time.", "bot");
       addMessage("First, what’s your name?", "bot");
     }
 
@@ -426,80 +325,43 @@ function shouldStartLeadFlow(lower) {
 
       addMessage(text, "user");
       inputEl.value = "";
-      inputEl.focus();
 
       const lower = text.toLowerCase();
 
-      // Allow them to bail out of the lead flow with "skip"
       if (leadMode !== "idle" && lower.includes("skip")) {
-        addMessage(
-          "No worries — we won’t collect any more details. You can still ask me about hours, services, or pricing.",
-          "bot"
-        );
+        addMessage("No worries — we won’t collect any more details.", "bot");
         leadMode = "idle";
-        leadDraft = { name: "", email: "", message: "" };
         return;
       }
 
-      // --- LEAD COLLECTION STATES ---
-
       if (leadMode === "collect_name") {
-        leadDraft.name = text.trim();
-        if (!leadDraft.name) {
-          addMessage("I didn’t quite catch that — what’s your name?", "bot");
-          return;
-        }
-        addMessage(
-          `Nice to meet you, ${leadDraft.name}! What’s the best email to reach you?`,
-          "bot"
-        );
+        leadDraft.name = text;
         leadMode = "collect_email";
+        addMessage(`Nice to meet you, ${leadDraft.name}! What’s the best email to reach you?`, "bot");
         return;
       }
 
       if (leadMode === "collect_email") {
-        leadDraft.email = text.trim();
-        if (!leadDraft.email) {
-          addMessage(
-            "Could you share an email so the office can contact you?",
-            "bot"
-          );
-          return;
-        }
-        addMessage(
-          "Got it — lastly, what is this about? (for example: appointment, billing question, pain, insurance, etc.)",
-          "bot"
-        );
+        leadDraft.email = text;
         leadMode = "collect_msg";
+        addMessage("Got it — lastly, what is this about?", "bot");
         return;
       }
 
       if (leadMode === "collect_msg") {
-        leadDraft.message = text.trim() || "No specific details given.";
-
-        addMessage(
-          "Thanks! I’m sending your details to the office now…",
-          "bot"
-        );
-
+        leadDraft.message = text;
+        addMessage("Thanks! I’m sending your details to the office now…", "bot");
         sendLeadToBackend(leadDraft);
-
-        // Reset state
         leadMode = "idle";
-        leadDraft = { name: "", email: "", message: "" };
         return;
       }
 
-// --- NORMAL CHAT LOGIC ---
+      if (shouldStartLeadFlow(lower)) {
+        startLeadFlow();
+        return;
+      }
 
-// They clearly want to book/change/cancel or be contacted → start lead flow
-if (shouldStartLeadFlow(lower)) {
-  startLeadFlow();
-  return;
-}
-
-// Otherwise just send to the AI
-sendToBackend(text);
+      sendToBackend(text);
     }
 
     sendBtn.addEventListener("click", handleSend);
@@ -510,10 +372,7 @@ sendToBackend(text);
       }
     });
 
-    // Bottom button always starts the lead flow immediately
-    leadBtn.addEventListener("click", () => {
-      startLeadFlow();
-    });
+    leadBtn.addEventListener("click", startLeadFlow);
   </script>
 </body>
 </html>
