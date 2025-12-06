@@ -1,0 +1,40 @@
+[2025-12-01T19:08:17]
+Q: What services do you offer?
+A: We offer a variety of services here at Summit Family Dental! These include cleanings to keep your teeth healthy, fillings and crowns for repairing damaged teeth, whitening treatments to brighten your smile, as well as emergency visits if you have any urgent dental needs. We also provide a range of other procedures, so don't hesitate to reach out to schedule an appointment or ask about our services in more detail!
+----------------------------------------
+[2025-12-01T21:17:50]
+Q: cd ~/ai-automations
+A: I think you may be entering a command line instruction instead of asking a question! Let me help clarify that for you - our business hours are Monday through Friday from 8AM to 5PM. If you're looking to schedule an appointment or have questions about our services, I'd be happy to assist you.
+----------------------------------------
+[2025-12-04T20:59:58]
+Q: hi nice to meet you
+A: Response(id='resp_0160c476cac2e53c0069323c99e1e8819f84934f695b66bcca', created_at=1764899993.0, error=None, incomplete_details=None, instructions=None, metadata={}, model='gpt-4.1-mini-2025-04-14', object='response', output=[ResponseOutputMessage(id='msg_0160c476cac2e53c0069323c9aebb0819fae142e4b20612b17', content=[ResponseOutputText(annotations=[], text='Nice to meet you too! How can I assist you with Summit Family Dental today?', type='output_text', logprobs=[])], role='assistant', status='completed', type='message')], parallel_tool_calls=True, temperature=1.0, tool_choice='auto', tools=[], top_p=1.0, background=False, conversation=None, max_output_tokens=512, max_tool_calls=None, previous_response_id=None, prompt=None, prompt_cache_key=None, prompt_cache_retention=None, reasoning=Reasoning(effort=None, generate_summary=None, summary=None), safety_identifier=None, service_tier='default', status='completed', text=ResponseTextConfig(format=ResponseFormatText(type='text'), verbosity='medium'), top_logprobs=0, truncation='disabled', usage=ResponseUsage(input_tokens=684, input_tokens_details=InputTokensDetails(cached_tokens=0), output_tokens=18, output_tokens_details=OutputTokensDetails(reasoning_tokens=0), total_tokens=702), user=None, billing={'payer': 'developer'}, store=True)
+----------------------------------------
+[2025-12-04T21:07:06]
+Q: hi
+A: Response(id='resp_0cee45341f7c5b8e0069323e4670348192b32fe9f8f71c2763', created_at=1764900422.0, error=None, incomplete_details=None, instructions=None, metadata={}, model='gpt-4.1-mini-2025-04-14', object='response', output=[ResponseOutputMessage(id='msg_0cee45341f7c5b8e0069323e4794b08192be562761ff53c90c', content=[ResponseOutputText(annotations=[], text='Hello! How can I assist you with Summit Family Dental today?', type='output_text', logprobs=[])], role='assistant', status='completed', type='message')], parallel_tool_calls=True, temperature=1.0, tool_choice='auto', tools=[], top_p=1.0, background=False, conversation=None, max_output_tokens=512, max_tool_calls=None, previous_response_id=None, prompt=None, prompt_cache_key=None, prompt_cache_retention=None, reasoning=Reasoning(effort=None, generate_summary=None, summary=None), safety_identifier=None, service_tier='default', status='completed', text=ResponseTextConfig(format=ResponseFormatText(type='text'), verbosity='medium'), top_logprobs=0, truncation='disabled', usage=ResponseUsage(input_tokens=680, input_tokens_details=InputTokensDetails(cached_tokens=0), output_tokens=14, output_tokens_details=OutputTokensDetails(reasoning_tokens=0), total_tokens=694), user=None, billing={'payer': 'developer'}, store=True)
+----------------------------------------
+[2025-12-04T21:07:34]
+Q: hi
+A: Hello! How can I help you today? If you’d like to book an appointment or have questions about our services, just let me know.
+----------------------------------------
+[2025-12-04T21:08:09]
+Q: im doing good, i am actuallt having some tooth pain, do you have any recomendations for the short term, and also could i make an appt?
+A: I'm sorry to hear about your tooth pain. For short-term relief, rinsing with warm salt water and avoiding very hot, cold, or sweet foods can help until you see a dentist. I can help you schedule an appointment—just let me know if you'd like me to pass your details to the office!
+----------------------------------------
+[2025-12-04T21:08:24]
+Q: sure
+A: You're welcome! Let me know if there's anything else I can help with.
+----------------------------------------
+[2025-12-04T21:08:34]
+Q: can u take my info?
+A: __TRIGGER_LEAD_FLOW__
+----------------------------------------
+[2025-12-04T21:09:12]
+Q: ummmm
+A: Hi there! How can I assist you today? If you need help booking an appointment or have a question, just let me know.
+----------------------------------------
+[2025-12-04T21:09:32]
+Q: oh great this is gunna be fun
+A: I’m glad to hear that! If you have any questions or want to schedule an appointment, just let me know. I’m here to help make your visit as smooth and comfortable as possible.
+----------------------------------------
