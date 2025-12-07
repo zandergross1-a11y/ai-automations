@@ -1,9 +1,9 @@
 import os
 import csv
-import smtplib
+import json
 from datetime import datetime
 from pathlib import Path
-from email.message import EmailMessage
+from urllib import request, error  # <-- for Resend HTTP call
 
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,9 +14,16 @@ from agent import answer_question
 
 # ---------- ENV VARS (SET IN RAILWAY) ----------
 
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")         # e.g. theaiplugtiktok@gmail.com
-APP_PASSWORD = os.getenv("APP_PASSWORD")         # Gmail app password
-BUSINESS_EMAIL = os.getenv("BUSINESS_EMAIL")     # Where leads should be sent
+# These should be set in Railway for EACH service:
+#
+# OPENAI_API_KEY   = your OpenAI key (already working)
+# RESEND_API_KEY   = your key from Resend
+# SENDER_EMAIL     = e.g. onboarding@resend.dev  (recommended)
+# BUSINESS_EMAIL   = where the lead should go (your Gmail, client email, etc.)
+
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "onboarding@resend.dev")
+BUSINESS_EMAIL = os.getenv("BUSINESS_EMAIL", "zander.gross1@gmail.com")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
 # CSV file where leads are stored (per service/client)
 LEADS_CSV = Path("leads.csv")
@@ -84,37 +91,53 @@ def save_lead_to_csv(lead: LeadRequest) -> None:
 
 def send_lead_email(lead: LeadRequest) -> None:
     """
-    Sends an email to BUSINESS_EMAIL with the lead details.
+    Sends an email to BUSINESS_EMAIL with the lead details using Resend's HTTP API.
     Runs as a background task so it never blocks the API response.
     """
-    # If env vars are missing, just log and skip sending
-    if not SENDER_EMAIL or not APP_PASSWORD or not BUSINESS_EMAIL:
-        print("⚠️ Missing email configuration; skipping email send.")
+    if not RESEND_API_KEY:
+        print("⚠️ RESEND_API_KEY is not set; skipping email send.")
         return
 
-    msg = EmailMessage()
-    msg["Subject"] = f"New website lead from {lead.name}"
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = BUSINESS_EMAIL
+    subject = f"New website lead from {lead.name}"
+    html_body = f"""
+      <p>New lead from your website:</p>
+      <ul>
+        <li><strong>Name:</strong> {lead.name}</li>
+        <li><strong>Email:</strong> {lead.email}</li>
+      </ul>
+      <p><strong>Message:</strong></p>
+      <p>{lead.message}</p>
+      <p>Received at: {datetime.now().isoformat(timespec="seconds")}</p>
+    """
 
-    body = (
-        f"New lead from your website:\n\n"
-        f"Name: {lead.name}\n"
-        f"Email: {lead.email}\n"
-        f"Message:\n{lead.message}\n\n"
-        f"Received at: {datetime.now().isoformat(timespec='seconds')}"
+    payload = {
+        "from": f"LeadFlowHQ <{SENDER_EMAIL}>",
+        "to": [BUSINESS_EMAIL],
+        "subject": subject,
+        "html": html_body,
+    }
+
+    data_bytes = json.dumps(payload).encode("utf-8")
+
+    req_obj = request.Request(
+        "https://api.resend.com/emails",
+        data=data_bytes,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+        },
     )
-    msg.set_content(body)
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.starttls()
-            smtp.login(SENDER_EMAIL, APP_PASSWORD)
-            smtp.send_message(msg)
-        print("✅ Lead email sent successfully.")
+        with request.urlopen(req_obj, timeout=10) as resp:
+            body = resp.read().decode("utf-8", errors="ignore")
+            print("✅ Resend email sent. Status:", resp.status, "Body:", body)
+    except error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="ignore")
+        print("❌ Resend HTTPError:", e.code, err_body)
     except Exception as e:
-        # Don't crash the app if email fails
-        print("❌ Error sending lead email:", e)
+        print("❌ Error sending lead email via Resend:", repr(e))
 
 
 # ---------- LEAD ENDPOINT ----------
