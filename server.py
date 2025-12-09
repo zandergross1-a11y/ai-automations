@@ -48,7 +48,7 @@ class ChatRequest(BaseModel):
 
 class LeadRequest(BaseModel):
     name: str
-    email: str
+    phone: str
     message: str
 
 
@@ -77,13 +77,13 @@ def save_lead_to_csv(lead: LeadRequest) -> None:
         writer = csv.writer(f)
 
         if is_new_file:
-            writer.writerow(["timestamp", "name", "email", "message"])
+            writer.writerow(["timestamp", "name", "phone", "message"])
 
         writer.writerow(
             [
                 datetime.now().isoformat(timespec="seconds"),
                 lead.name,
-                lead.email,
+                lead.phone,
                 lead.message,
             ]
         )
@@ -103,7 +103,7 @@ def send_lead_email(lead: LeadRequest) -> None:
       <p>New lead from your website:</p>
       <ul>
         <li><strong>Name:</strong> {lead.name}</li>
-        <li><strong>Email:</strong> {lead.email}</li>
+        <li><strong>Phone:</strong> {lead.phone}</li>
       </ul>
       <p><strong>Message:</strong></p>
       <p>{lead.message}</p>
