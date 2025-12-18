@@ -2,314 +2,308 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-<title>LeadFlowHQ Assistant • Horizon Chiropractic</title>
+<title>LeadFlowHQ Assistant • Oak Ridge HVAC</title>
   <style>
-:root {
-  --lf-bg: #ffffff;              /* main card background */
-  --lf-surface: #f9fafb;         /* chat area surface */
-  --lf-border: #e5e7eb;
-  --lf-accent: #0ea5e9;          /* dental aqua */
-  --lf-accent-soft: rgba(14, 165, 233, 0.14);
+    :root {
+      --lf-bg: #ffffff;              /* widget card background */
+      --lf-surface: #f9fafb;         /* chat area surface */
+      --lf-border: #e5e7eb;
+      --lf-accent: #0ea5e9;          /* main accent (aqua) */
+      --lf-accent-soft: rgba(14, 165, 233, 0.14);
 
-  --lf-text: #0f172a;            /* dark text */
-  --lf-muted: #6b7280;           /* softer text */
-  --lf-danger: #f97373;
-}
+      --lf-text: #0f172a;            /* dark text */
+      --lf-muted: #6b7280;           /* softer text */
+      --lf-danger: #f97373;
+    }
 
-* {
-  box-sizing: border-box;
-}
+    * {
+      box-sizing: border-box;
+    }
 
-body {
-  margin: 0;
-  padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  /* soft gradient “website” background */
-  background: linear-gradient(180deg, #eef2ff 0%, #e0f2fe 40%, #f9fafb 100%);
-  color: var(--lf-text);
-  height: 100vh;
-  overflow: hidden;
-}
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      /* Soft gradient “website” background */
+      background: linear-gradient(180deg, #eef2ff 0%, #e0f2fe 40%, #f9fafb 100%);
+      color: var(--lf-text);
+      height: 100vh;
+      overflow: hidden;
+    }
 
-/* Floating launcher button */
-.lf-launcher {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 9999;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: none;
-  cursor: pointer;
-  background: linear-gradient(135deg, var(--lf-accent), #38bdf8);
-  color: white;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.6);
-  font-size: 13px;
-  font-weight: 500;
-}
+    /* Floating launcher button */
+    .lf-launcher {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 9999;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--lf-accent), #38bdf8);
+      color: white;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.6);
+      font-size: 13px;
+      font-weight: 500;
+    }
 
-.lf-launcher-avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-}
+    .lf-launcher-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
 
-/* Chat container (floating card) */
-.chat-container {
-  position: fixed;
-  right: 20px;
-  bottom: 80px;
-  width: 380px;
-  max-width: 92vw;
-  height: 520px;
-  max-height: 80vh;
+    /* Chat container (floating card) */
+    .chat-container {
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 380px;
+      max-width: 92vw;
+      height: 520px;
+      max-height: 80vh;
 
-  /* clean white widget over the gradient page */
-  background: var(--lf-bg);
-  border-radius: 20px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
-  display: none;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--lf-border);
-  z-index: 9999;
-  animation: lf-pop 0.18s ease-out;
-}
+      background: var(--lf-bg);
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+      display: none; /* opened by launcher */
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--lf-border);
+      z-index: 9999;
+      animation: lf-pop 0.18s ease-out;
+    }
 
-@keyframes lf-pop {
-  from {
-    transform: translateY(12px) scale(0.96);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-}
+    @keyframes lf-pop {
+      from {
+        transform: translateY(12px) scale(0.96);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
 
-.chat-header {
-  padding: 12px 14px;
-  background: linear-gradient(135deg, var(--lf-accent), #38bdf8);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #f9fafb;
-}
+    .chat-header {
+      padding: 12px 14px;
+      background: linear-gradient(135deg, var(--lf-accent), #38bdf8);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #f9fafb;
+    }
 
-.avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.28);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 16px;
-}
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 16px;
+    }
 
-.chat-header-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+    .chat-header-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
-.chat-header-title {
-  font-size: 14px;
-  font-weight: 600;
-}
+    .chat-header-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
 
-.chat-header-subtitle {
-  font-size: 11px;
-  opacity: 0.92;
-}
+    .chat-header-subtitle {
+      font-size: 11px;
+      opacity: 0.92;
+    }
 
-.chat-header-status {
-  font-size: 10px;
-  opacity: 0.85;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+    .chat-header-status {
+      font-size: 10px;
+      opacity: 0.85;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
 
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: #22c55e;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.28);
-}
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.28);
+    }
 
-.chat-close {
-  margin-left: auto;
-  background: transparent;
-  border: none;
-  color: #e5e7eb;
-  cursor: pointer;
-  font-size: 14px;
-  opacity: 0.9;
-}
+    .chat-close {
+      margin-left: auto;
+      background: transparent;
+      border: none;
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 14px;
+      opacity: 0.9;
+    }
 
-.chat-messages {
-  flex: 1;
-  padding: 10px;
-  overflow-y: auto;
-  font-size: 13px;
-  background: var(--lf-surface);
-}
+    .chat-messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      font-size: 13px;
+      background: var(--lf-surface);
+    }
 
-.message-row {
-  display: flex;
-  margin-bottom: 8px;
-}
+    .message-row {
+      display: flex;
+      margin-bottom: 8px;
+    }
 
-.message-row.user {
-  justify-content: flex-end;
-}
+    .message-row.user {
+      justify-content: flex-end;
+    }
 
-.bubble {
-  max-width: 80%;
-  padding: 8px 10px;
-  border-radius: 14px;
-  line-height: 1.35;
-}
+    .bubble {
+      max-width: 80%;
+      padding: 8px 10px;
+      border-radius: 14px;
+      line-height: 1.35;
+    }
 
-.bubble.user {
-  background: linear-gradient(135deg, var(--lf-accent), #38bdf8);
-  color: white;
-  border-bottom-right-radius: 4px;
-}
+    .bubble.user {
+      background: linear-gradient(135deg, var(--lf-accent), #38bdf8);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
 
-.bubble.bot {
-  background: #ffffff;               /* white bot bubble */
-  color: var(--lf-text);
-  border: 1px solid var(--lf-border);
-  border-bottom-left-radius: 4px;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
-}
+    .bubble.bot {
+      background: #ffffff;
+      color: var(--lf-text);
+      border: 1px solid var(--lf-border);
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    }
 
-.bubble.system {
-  font-size: 12px;
-  color: var(--lf-muted);
-  background: rgba(15, 23, 42, 0.04);
-  border-radius: 999px;
-  padding: 4px 10px;
-  margin: 4px auto 10px auto;
-  text-align: center;
-}
+    .bubble.system {
+      font-size: 12px;
+      color: var(--lf-muted);
+      background: rgba(15, 23, 42, 0.04);
+      border-radius: 999px;
+      padding: 4px 10px;
+      margin: 4px auto 10px auto;
+      text-align: center;
+    }
 
-.chat-input-area {
-  padding: 8px 10px;
-  border-top: 1px solid var(--lf-border);
-  background: #ffffff;  /* light footer */
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+    .chat-input-area {
+      padding: 8px 10px;
+      border-top: 1px solid var(--lf-border);
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
-.helper-bar {
-  font-size: 10px;
-  opacity: 0.9;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
+    .helper-bar {
+      font-size: 10px;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
 
-.helper-text {
-  font-size: 10px;
-  color: var(--lf-muted);
-}
+    .helper-text {
+      font-size: 10px;
+      color: var(--lf-muted);
+    }
 
-/* ✅ more readable “Request a call” button */
-.lead-btn {
-  border-radius: 999px;
-  border: 1px solid var(--lf-accent);
-  background: #ffffff;
-  color: var(--lf-accent);
-  font-size: 10px;
-  padding: 4px 10px;
-  cursor: pointer;
-  white-space: nowrap;
-}
+    .lead-btn {
+      border-radius: 999px;
+      border: 1px solid var(--lf-accent);
+      background: var(--lf-accent-soft);
+      color: #0f172a;
+      font-size: 10px;
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
 
-.lead-btn:hover {
-  background: var(--lf-accent-soft);
-}
+    .lead-btn:active {
+      transform: translateY(1px);
+    }
 
-.lead-btn:active {
-  transform: translateY(1px);
-}
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
 
-.input-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
+    .chat-input {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--lf-border);
+      background: #f9fafb;
+      color: var(--lf-text);
+      font-size: 13px;
+      outline: none;
+    }
 
-.chat-input {
-  flex: 1;
-  padding: 8px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--lf-border);
-  background: #f9fafb;
-  color: var(--lf-text);
-  font-size: 13px;
-  outline: none;
-}
+    .chat-input::placeholder {
+      color: #6b7280;
+    }
 
-.chat-input::placeholder {
-  color: #6b7280;
-}
+    .send-btn {
+      border-radius: 999px;
+      border: none;
+      padding: 0 14px;
+      font-size: 13px;
+      cursor: pointer;
+      background: var(--lf-accent);
+      color: white;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+    }
 
-.send-btn {
-  border-radius: 999px;
-  border: none;
-  padding: 0 14px;
-  font-size: 13px;
-  cursor: pointer;
-  background: var(--lf-accent);
-  color: white;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-}
+    .send-btn:active {
+      transform: translateY(1px);
+    }
 
-.send-btn:active {
-  transform: translateY(1px);
-}
+    .error-text {
+      font-size: 10px;
+      color: var(--lf-danger);
+      margin-top: 2px;
+    }
 
-.error-text {
-  font-size: 10px;
-  color: var(--lf-danger);
-  margin-top: 2px;
-}
+    @media (max-width: 600px) {
+      .chat-container {
+        right: 10px;
+        left: 10px;
+        width: auto;
+        bottom: 90px;
+        max-height: 75vh;
+      }
 
-@media (max-width: 600px) {
-  .chat-container {
-    right: 10px;
-    left: 10px;
-    width: auto;
-    bottom: 90px;
-    max-height: 75vh;
-  }
-
-  .lf-launcher {
-    right: 16px;
-    bottom: 16px;
-  }
-}
+      .lf-launcher {
+        right: 16px;
+        bottom: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -325,8 +319,9 @@ body {
       <div class="avatar">AI</div>
       <div class="chat-header-text">
         <div class="chat-header-title">LeadFlowHQ Assistant</div>
+        <!-- EDIT THIS PER CLIENT -->
         <div class="chat-header-subtitle">
-          <span data-business-name></span> • Smart website chat
+          Summit Family Dental • Smart website chat
         </div>
         <div class="chat-header-status">
           <span class="status-dot"></span>
@@ -338,20 +333,19 @@ body {
 
     <div class="chat-messages" id="messages">
       <div class="message-row bot">
-        <div class="bubble bot">
-          Hi! I’m your AI assistant for <span data-business-name></span> 👋<br />
-          I can answer questions about visits, cleanings, and insurance — and I can also take your details so the team can call or email you back.<br /><br />
-          You can ask a question, or click <strong>“Request a call”</strong> below.
+        <div class="bubble bot" id="initialBubble">
+          <!-- This gets overwritten by JS using CONFIG.businessName -->
+          Hi! I’m your AI assistant 👋
         </div>
       </div>
-      <div class="bubble.system">
+      <div class="bubble system" id="systemBubble">
         Demo only – this is what your LeadFlowHQ widget could look like.
       </div>
     </div>
 
     <div class="chat-input-area">
       <div class="helper-bar">
-        <div class="helper-text">
+        <div class="helper-text" id="helperText">
           Ask about hours, services, or pricing — or let us collect your details for a call back.
         </div>
         <button id="leadBtn" class="lead-btn">Request a call</button>
@@ -371,19 +365,14 @@ body {
   </div>
 
   <script>
-    // ===== CONFIG (EASY TO CHANGE PER CLIENT) =====
+// ===== SIMPLE PER-CLIENT CONFIG (Option 1) =====
 const CONFIG = {
-  businessName: "Horizon Chiropractic",
-  baseUrl: "https://second-client-test-production.up.railway.app",
+  // EDIT THIS PER CLIENT ↓↓↓
+  businessName: "Oak Ridge HVAC",
+  industryLine: "heating, cooling, and HVAC services",
+  helperLine: "Ask about service, availability, or pricing — or let us collect your details for a call back.",
+  baseUrl: "https://YOUR_OAK_RAILWAY_URL_HERE",
 };
-
-    // 🔹 Fill in all places that use the business name automatically
-    document.addEventListener("DOMContentLoaded", () => {
-      const nameEls = document.querySelectorAll("[data-business-name]");
-      nameEls.forEach((el) => {
-        el.textContent = CONFIG.businessName;
-      });
-    });
 
     const launcherEl = document.getElementById("lf-launcher");
     const chatContainer = document.getElementById("chatContainer");
@@ -393,6 +382,16 @@ const CONFIG = {
     const sendBtn = document.getElementById("sendBtn");
     const leadBtn = document.getElementById("leadBtn");
     const errorTextEl = document.getElementById("errorText");
+    const initialBubbleEl = document.getElementById("initialBubble");
+    const helperTextEl = document.getElementById("helperText");
+
+    // Initialize text based on CONFIG
+    initialBubbleEl.innerHTML =
+      `Hi! I’m your AI assistant for <strong>${CONFIG.businessName}</strong> 👋<br />` +
+      `I can answer questions about ${CONFIG.industryLine} — and I can also take your details so the team can call you back.<br /><br />` +
+      `You can ask a question, or click <strong>“Request a call”</strong> below.`;
+
+    helperTextEl.textContent = CONFIG.helperLine;
 
     let hasLead = false;
 
@@ -418,6 +417,8 @@ const CONFIG = {
         "consultation",
         "checkup",
         "visit",
+        "chiropractic",
+        "adjustment",
       ];
       const wantsInfoPhrases = [
         "take my info",
@@ -511,8 +512,11 @@ const CONFIG = {
         addMessage(reply, "bot");
       } catch (err) {
         messagesEl.removeChild(typingRow);
-        showError("Error connecting to backend.");
-        addMessage("Sorry — I couldn’t reach the assistant. Please try again or contact the office directly.", "bot");
+        showError("Error connecting to assistant.");
+        addMessage(
+          "Sorry — I couldn’t reach the assistant. Please try again or contact the office directly.",
+          "bot"
+        );
       }
     }
 
@@ -546,7 +550,10 @@ const CONFIG = {
 
     function startLeadFlow() {
       if (hasLead) {
-        addMessage("I already have your contact details saved. If you just have a question, go ahead and ask it here 😊", "bot");
+        addMessage(
+          "I already have your contact details saved. If you just have a question, go ahead and ask it here 😊",
+          "bot"
+        );
         return;
       }
 

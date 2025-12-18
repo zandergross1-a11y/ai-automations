@@ -21,6 +21,35 @@ FAQ_FILE = CLIENT_DIR / "faq.txt"
 TONE_FILE = CLIENT_DIR / "tone.txt"
 LOG_FILE = CLIENT_DIR / "conversations.log"
 
+# --- SIMPLE GLOBAL STATE FOR YES/NO LEAD CONFIRM ---
+# NOTE: This is per backend process (fine for low-traffic demos).
+AWAITING_LEAD_CONFIRM = False
+
+YES_WORDS = [
+    "yes",
+    "yeah",
+    "yep",
+    "sure",
+    "yes please",
+    "please do",
+    "that would be great",
+    "ok",
+    "okay",
+    "sounds good",
+]
+NO_WORDS = [
+    "no",
+    "nope",
+    "nah",
+    "not now",
+    "not yet",
+    "i'm good",
+    "im good",
+    "i am good",
+    "i'm okay",
+    "im okay",
+]
+
 
 def load_faq() -> str:
     """
@@ -175,25 +204,65 @@ def wants_handoff(message: str) -> bool:
     return False
 
 
+def _looks_like_yes(txt: str) -> bool:
+    txt = txt.strip().lower()
+    if not txt:
+        return False
+    for w in YES_WORDS:
+        if txt == w or txt.startswith(w + " "):
+            return True
+    return False
+
+
+def _looks_like_no(txt: str) -> bool:
+    txt = txt.strip().lower()
+    if not txt:
+        return False
+    for w in NO_WORDS:
+        if txt == w or txt.startswith(w + " "):
+            return True
+    return False
+
+
 def answer_question(question: str) -> str:
     """
     Use OpenAI to answer a customer question
     using the FAQ & tone settings for this client.
+    Includes a very simple "yes/no lead confirm" mode.
     """
+    global AWAITING_LEAD_CONFIRM
 
-    # 🔹 Fast path: simple "thanks / ok / got it"
-    if is_brief_ack(question):
+    raw_txt = question or ""
+    lower_txt = raw_txt.strip().lower()
+
+    # 🔹 1) If we're waiting for a YES/NO about a call, handle that first.
+    if AWAITING_LEAD_CONFIRM:
+        if _looks_like_yes(lower_txt):
+            AWAITING_LEAD_CONFIRM = False
+            # Tell frontend to start lead flow (collect phone, etc.)
+            return "__TRIGGER_LEAD_FLOW__"
+
+        if _looks_like_no(lower_txt):
+            AWAITING_LEAD_CONFIRM = False
+            return (
+                "No problem at all — if you change your mind later, just let me know and I can have the team reach out."
+            )
+
+        # If they said something else, drop the flag and continue normally.
+        AWAITING_LEAD_CONFIRM = False
+
+    # 🔹 2) Fast path: simple "thanks / ok / got it"
+    if is_brief_ack(raw_txt):
         return "You’re very welcome! 😊 If you have any other questions, just ask."
 
-    # 🔹 Handoff / "take my info" intent → tell frontend to start the lead flow
-    if wants_handoff(question):
-        # VERY IMPORTANT: this exact magic string is what demo_chat.html checks for
+    # 🔹 3) Direct handoff intent → start lead flow immediately
+    if wants_handoff(raw_txt):
         return "__TRIGGER_LEAD_FLOW__"
 
     faq_text = load_faq()
     tone_text = load_tone()
 
-    # 🔹 Upgraded, agency-grade system prompt
+    # 🔹 4) Upgraded, agency-grade system prompt
     prompt = f"""
 You are the **AI assistant for this local business**, acting like a warm, professional front-desk person.
 
@@ -268,7 +337,7 @@ Instead you must return the exact special text:
 
 __TRIGGER_LEAD_FLOW__
 
-(That tells the website widget to start collecting their name, email, etc.  
+(That tells the website widget to start collecting their details.  
 Do NOT add any extra words around it.)
 
 ---
@@ -314,9 +383,64 @@ Do NOT mention that you are an AI or that you are using a prompt.
     try:
         text = resp.output[0].content[0].text
     except Exception:
-        text = "I'm sorry, something went wrong generating a reply. Please try again."
+        return "I'm sorry, something went wrong generating a reply. Please try again."
 
-    return text.strip()
+    answer = text.strip()
+
+    # 🔹 5) After generating an answer, decide if we should ask:
+    #    "Want me to have the team call you? Just say yes."
+    # We only set this when it sounds like a pain/appointment situation,
+    # and only if they haven't already explicitly asked for a handoff.
+    lower = lower_txt
+
+    pain_keywords = [
+        "pain",
+        "hurts",
+        "hurt",
+        "ache",
+        "aching",
+        "injury",
+        "injured",
+        "emergency",
+        "swollen",
+        "swelling",
+        "can't sleep",
+        "cant sleep",
+        "stiff",
+        "spasm",
+        "spasms",
+        "numb",
+        "numbness",
+        "tingling",
+        "tingly",
+    ]
+    appointment_keywords = [
+        "appointment",
+        "appt",
+        "appts",
+        "visit",
+        "come in",
+        "come by",
+        "see someone",
+        "see the doctor",
+        "see the dentist",
+        "see the chiropractor",
+        "see the chiro",
+        "schedule",
+        "book",
+    ]
+
+    looks_like_pain_or_appt = any(k in lower for k in pain_keywords + appointment_keywords)
+
+    if looks_like_pain_or_appt and not wants_handoff(raw_txt):
+        # Set flag so the NEXT message can be a simple "yes/no".
+        AWAITING_LEAD_CONFIRM = True
+        answer += (
+            "\n\nIf you'd like, I can have the team give you a call to help with this — "
+            "just reply 'yes' and I'll collect your phone number."
+        )
+
+    return answer
 
 
 def log_interaction(question: str, answer: str) -> None:
