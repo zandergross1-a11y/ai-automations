@@ -321,7 +321,7 @@
         <div class="chat-header-title">LeadFlowHQ Assistant</div>
         <!-- EDIT THIS PER CLIENT -->
         <div class="chat-header-subtitle">
-          Summit Family Dental • Smart website chat
+          Oak Ridge HVAC • Smart website chat
         </div>
         <div class="chat-header-status">
           <span class="status-dot"></span>
@@ -364,286 +364,367 @@
     </div>
   </div>
 
-  <script>
-// ===== SIMPLE PER-CLIENT CONFIG (Option 1) =====
-const CONFIG = {
-  // EDIT THIS PER CLIENT ↓↓↓
-  businessName: "Oak Ridge HVAC",
-  industryLine: "heating, cooling, and HVAC services",
-  helperLine: "Ask about service, availability, or pricing — or let us collect your details for a call back.",
-  baseUrl: "oak-hvac-production.up.railway.app",
-};
+<script>
+  // ===== SIMPLE PER-CLIENT CONFIG (Option 1) =====
+  const CONFIG = {
+    // EDIT THIS PER CLIENT ↓↓↓
+    businessName: "Oak Ridge HVAC",
+    industryLine: "heating, cooling, and HVAC services",
+    helperLine: "Ask about service, availability, or pricing — or let us collect your details for a call back.",
+    baseUrl: "https://oak-hvac-production.up.railway.app",
+  };
 
-    const launcherEl = document.getElementById("lf-launcher");
-    const chatContainer = document.getElementById("chatContainer");
-    const closeEl = document.getElementById("chatClose");
-    const messagesEl = document.getElementById("messages");
-    const inputEl = document.getElementById("chatInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const leadBtn = document.getElementById("leadBtn");
-    const errorTextEl = document.getElementById("errorText");
-    const initialBubbleEl = document.getElementById("initialBubble");
-    const helperTextEl = document.getElementById("helperText");
+  const launcherEl = document.getElementById("lf-launcher");
+  const chatContainer = document.getElementById("chatContainer");
+  const closeEl = document.getElementById("chatClose");
+  const messagesEl = document.getElementById("messages");
+  const inputEl = document.getElementById("chatInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const leadBtn = document.getElementById("leadBtn");
+  const errorTextEl = document.getElementById("errorText");
+  const initialBubbleEl = document.getElementById("initialBubble");
+  const helperTextEl = document.getElementById("helperText");
 
-    // Initialize text based on CONFIG
-    initialBubbleEl.innerHTML =
-      `Hi! I’m your AI assistant for <strong>${CONFIG.businessName}</strong> 👋<br />` +
-      `I can answer questions about ${CONFIG.industryLine} — and I can also take your details so the team can call you back.<br /><br />` +
-      `You can ask a question, or click <strong>“Request a call”</strong> below.`;
+  // Initialize text based on CONFIG
+  initialBubbleEl.innerHTML =
+    `Hi! I’m your AI assistant for <strong>${CONFIG.businessName}</strong> 👋<br />` +
+    `I can answer questions about ${CONFIG.industryLine} — and I can also take your details so the team can call you back.<br /><br />` +
+    `You can ask a question, or click <strong>“Request a call”</strong> below.`;
 
-    helperTextEl.textContent = CONFIG.helperLine;
+  helperTextEl.textContent = CONFIG.helperLine;
 
-    let hasLead = false;
+  let hasLead = false;
 
-    function shouldStartLeadFlow(lower) {
-      const intentVerbs = [
-        "make",
-        "schedule",
-        "book",
-        "set up",
-        "set one up",
-        "arrange",
-        "reschedule",
-        "move my",
-        "change my",
-        "cancel my",
-        "cancel an",
-      ];
-      const appointmentWords = [
-        "appointment",
-        "appt",
-        "appts",
-        "cleaning",
-        "consultation",
-        "checkup",
-        "visit",
-        "chiropractic",
-        "adjustment",
-      ];
-      const wantsInfoPhrases = [
-        "take my info",
-        "take my information",
-        "leave my info",
-        "leave info",
-        "give you my info",
-        "give u my info",
-        "give my info",
-        "have someone call",
-        "have somebody call",
-        "have the office call",
-        "call me back",
-        "call me about this",
-        "call me please",
-        "can someone call me",
-        "can somebody call me",
-      ];
+  // ✅ NEW: we only treat "yes/ok/sure" as lead intent if a callback offer JUST happened
+  let awaitingCallbackConfirm = false;
 
-      if (wantsInfoPhrases.some((p) => lower.includes(p))) return true;
+  // ✅ NEW: tight, safe list of "yes" confirmations
+  const YES_CONFIRMATIONS = new Set([
+    "yes", "y", "yeah", "yep", "sure", "ok", "okay", "k",
+    "do it", "lets do it", "let's do it", "sounds good", "please", "go ahead"
+  ]);
 
-      const hasVerb = intentVerbs.some((v) => lower.includes(v));
-      const hasApptWord = appointmentWords.some((w) => lower.includes(w));
-      return hasVerb && hasApptWord;
-    }
+  // ✅ NEW: detect callback-offer language in the bot reply
+  function isCallbackOfferText(text) {
+    if (!text) return false;
+    const t = text.toLowerCase();
 
-    let leadMode = "idle";
-    let leadDraft = { name: "", phone: "", message: "" };
+    // High-signal patterns: these mean "we can contact you / collect info"
+    const patterns = [
+      "call you back",
+      "call-back",
+      "callback",
+      "collect your",
+      "take your details",
+      "take a few details",
+      "name and phone",
+      "best phone number",
+      "have someone call",
+      "have somebody call",
+      "have the office call",
+      "have someone reach out",
+      "reach out to you",
+      "arrange a call",
+      "request a call",
+      "request a call-back",
+      "pass your information",
+      "share your contact",
+      "get in touch",
+    ];
 
-    function addMessage(text, sender = "bot") {
-      const row = document.createElement("div");
-      row.className = "message-row " + sender;
+    return patterns.some((p) => t.includes(p));
+  }
 
-      const bubble = document.createElement("div");
-      bubble.className = "bubble " + sender;
-      bubble.innerHTML = text.replace(/\n/g, "<br />");
+  // ✅ NEW: normalize user confirmation like "sure!" -> "sure"
+  function normalizeYes(text) {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[.!?,]/g, "")
+      .replace(/\s+/g, " ");
+  }
 
-      row.appendChild(bubble);
-      messagesEl.appendChild(row);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
+  function shouldStartLeadFlow(lower) {
+    const intentVerbs = [
+      "make",
+      "schedule",
+      "book",
+      "set up",
+      "set one up",
+      "arrange",
+      "reschedule",
+      "move my",
+      "change my",
+      "cancel my",
+      "cancel an",
+    ];
 
-    function showError(msg) {
-      errorTextEl.textContent = msg;
-      errorTextEl.style.display = "block";
-      setTimeout(() => {
-        errorTextEl.style.display = "none";
-      }, 4000);
-    }
+    // ✅ Slightly broadened for HVAC + service calls
+    const appointmentWords = [
+      "appointment",
+      "appt",
+      "appts",
+      "consultation",
+      "visit",
+      "estimate",
+      "quote",
+      "service",
+      "technician",
+      "install",
+      "installation",
+      "repair",
+      "maintenance",
+      "tune up",
+      "tune-up",
+      "inspection",
+    ];
 
-    async function sendToBackend(userText) {
-      const typingRow = document.createElement("div");
-      typingRow.className = "message-row bot";
-      const typingBubble = document.createElement("div");
-      typingBubble.className = "bubble bot";
-      typingBubble.textContent = "Thinking...";
-      typingRow.appendChild(typingBubble);
-      messagesEl.appendChild(typingRow);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+    const wantsInfoPhrases = [
+      "take my info",
+      "take my information",
+      "leave my info",
+      "leave info",
+      "give you my info",
+      "give u my info",
+      "give my info",
+      "have someone call",
+      "have somebody call",
+      "have the office call",
+      "call me back",
+      "call me about this",
+      "call me please",
+      "can someone call me",
+      "can somebody call me",
+    ];
 
-      try {
-        const response = await fetch(`${CONFIG.baseUrl}/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userText }),
-        });
+    if (wantsInfoPhrases.some((p) => lower.includes(p))) return true;
 
-        messagesEl.removeChild(typingRow);
+    const hasVerb = intentVerbs.some((v) => lower.includes(v));
+    const hasApptWord = appointmentWords.some((w) => lower.includes(w));
+    return hasVerb && hasApptWord;
+  }
 
-        if (!response.ok) {
-          showError("There was a problem reaching the assistant.");
-          addMessage("Sorry — I’m having trouble connecting right now. Please try again in a moment.", "bot");
-          return;
-        }
+  let leadMode = "idle";
+  let leadDraft = { name: "", phone: "", message: "" };
 
-        const data = await response.json();
-        const reply = data.reply || "No reply from backend.";
+  function addMessage(text, sender = "bot") {
+    const row = document.createElement("div");
+    row.className = "message-row " + sender;
 
-        if (reply === "__TRIGGER_LEAD_FLOW__") {
-          if (hasLead) {
-            addMessage(
-              "I already have your contact details on file. If something has changed, just tell me what’s new and I’ll pass it along.",
-              "bot"
-            );
-          } else {
-            startLeadFlow();
-          }
-          return;
-        }
+    const bubble = document.createElement("div");
+    bubble.className = "bubble " + sender;
+    bubble.innerHTML = text.replace(/\n/g, "<br />");
 
-        addMessage(reply, "bot");
-      } catch (err) {
-        messagesEl.removeChild(typingRow);
-        showError("Error connecting to assistant.");
-        addMessage(
-          "Sorry — I couldn’t reach the assistant. Please try again or contact the office directly.",
-          "bot"
-        );
+    row.appendChild(bubble);
+    messagesEl.appendChild(row);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function showError(msg) {
+    errorTextEl.textContent = msg;
+    errorTextEl.style.display = "block";
+    setTimeout(() => {
+      errorTextEl.style.display = "none";
+    }, 4000);
+  }
+
+  async function sendToBackend(userText) {
+    const typingRow = document.createElement("div");
+    typingRow.className = "message-row bot";
+    const typingBubble = document.createElement("div");
+    typingBubble.className = "bubble bot";
+    typingBubble.textContent = "Thinking...";
+    typingRow.appendChild(typingBubble);
+    messagesEl.appendChild(typingRow);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    try {
+      const response = await fetch(`${CONFIG.baseUrl}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText }),
+      });
+
+      messagesEl.removeChild(typingRow);
+
+      if (!response.ok) {
+        showError("There was a problem reaching the assistant.");
+        addMessage("Sorry — I’m having trouble connecting right now. Please try again in a moment.", "bot");
+        return;
       }
-    }
 
-    async function sendLeadToBackend(lead) {
-      try {
-        const res = await fetch(`${CONFIG.baseUrl}/lead`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(lead),
-        });
+      const data = await response.json();
+      const reply = data.reply || "No reply from backend.";
 
-        if (!res.ok) {
-          showError("There was an issue sending your details.");
+      if (reply === "__TRIGGER_LEAD_FLOW__") {
+        awaitingCallbackConfirm = false; // ✅ once lead flow starts, don't keep waiting
+        if (hasLead) {
           addMessage(
-            "There was an issue sending your details. Please call the office directly so they don’t miss you.",
+            "I already have your contact details on file. If something has changed, just tell me what’s new and I’ll pass it along.",
             "bot"
           );
-          return;
+        } else {
+          startLeadFlow();
         }
+        return;
+      }
 
-        hasLead = true;
-        addMessage("Got it — we’ve sent your details to the office. They’ll reach out as soon as possible. 📞", "bot");
-      } catch (err) {
+      addMessage(reply, "bot");
+
+      // ✅ NEW: if bot reply contains callback-offer language, arm the confirmation flag
+      if (isCallbackOfferText(reply) && leadMode === "idle" && !hasLead) {
+        awaitingCallbackConfirm = true;
+      } else {
+        // If bot isn't offering a callback, don't keep waiting
+        awaitingCallbackConfirm = false;
+      }
+    } catch (err) {
+      messagesEl.removeChild(typingRow);
+      showError("Error connecting to assistant.");
+      addMessage(
+        "Sorry — I couldn’t reach the assistant. Please try again or contact the office directly.",
+        "bot"
+      );
+      awaitingCallbackConfirm = false;
+    }
+  }
+
+  async function sendLeadToBackend(lead) {
+    try {
+      const res = await fetch(`${CONFIG.baseUrl}/lead`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lead),
+      });
+
+      if (!res.ok) {
         showError("There was an issue sending your details.");
         addMessage(
           "There was an issue sending your details. Please call the office directly so they don’t miss you.",
           "bot"
         );
-      }
-    }
-
-    function startLeadFlow() {
-      if (hasLead) {
-        addMessage(
-          "I already have your contact details saved. If you just have a question, go ahead and ask it here 😊",
-          "bot"
-        );
         return;
       }
 
-      leadDraft = { name: "", phone: "", message: "" };
-      leadMode = "collect_name";
-
+      hasLead = true;
+      addMessage("Got it — we’ve sent your details to the office. They’ll reach out as soon as possible. 📞", "bot");
+    } catch (err) {
+      showError("There was an issue sending your details.");
       addMessage(
-        "Sure — I can take a few details so the office can reach out to you. If you'd rather not share info, you can type “skip” any time.",
+        "There was an issue sending your details. Please call the office directly so they don’t miss you.",
         "bot"
       );
-      addMessage("First, what’s your name?", "bot");
+    }
+  }
+
+  function startLeadFlow() {
+    awaitingCallbackConfirm = false; // ✅ stop waiting once we start
+    if (hasLead) {
+      addMessage(
+        "I already have your contact details saved. If you just have a question, go ahead and ask it here 😊",
+        "bot"
+      );
+      return;
     }
 
-    function handleSend() {
-      const text = inputEl.value.trim();
-      if (!text) return;
+    leadDraft = { name: "", phone: "", message: "" };
+    leadMode = "collect_name";
 
-      addMessage(text, "user");
-      inputEl.value = "";
-      inputEl.focus();
+    addMessage(
+      "Sure — I can take a few details so the office can reach out to you. If you'd rather not share info, you can type “skip” any time.",
+      "bot"
+    );
+    addMessage("First, what’s your name?", "bot");
+  }
 
-      const lower = text.toLowerCase();
+  function handleSend() {
+    const text = inputEl.value.trim();
+    if (!text) return;
 
-      if (leadMode !== "idle" && lower.includes("skip")) {
-        addMessage(
-          "No worries — we won’t collect any more details. You can still ask me about hours, services, or pricing.",
-          "bot"
-        );
-        leadMode = "idle";
-        leadDraft = { name: "", phone: "", message: "" };
-        return;
-      }
+    addMessage(text, "user");
+    inputEl.value = "";
+    inputEl.focus();
 
-      if (leadMode === "collect_name") {
-        leadDraft.name = text;
-        leadMode = "collect_phone";
-        addMessage(`Nice to meet you, ${leadDraft.name}! What’s the best phone number to reach you?`, "bot");
-        return;
-      }
+    const lower = text.toLowerCase();
 
-      if (leadMode === "collect_phone") {
-        leadDraft.phone = text;
-        leadMode = "collect_msg";
-        addMessage(
-          "Got it — lastly, what is this about? (for example: appointment, pain, insurance, or a general question)",
-          "bot"
-        );
-        return;
-      }
-
-      if (leadMode === "collect_msg") {
-        leadDraft.message = text;
-        addMessage("Thanks! I’m sending your details to the office now…", "bot");
-        sendLeadToBackend(leadDraft);
-        leadMode = "idle";
-        leadDraft = { name: "", phone: "", message: "" };
-        return;
-      }
-
-      if (shouldStartLeadFlow(lower)) {
+    // ✅ NEW: if we JUST offered a callback, treat a yes-confirmation as intent to start lead flow
+    if (leadMode === "idle" && awaitingCallbackConfirm && !hasLead) {
+      const norm = normalizeYes(text);
+      if (YES_CONFIRMATIONS.has(norm)) {
         startLeadFlow();
         return;
       }
-
-      sendToBackend(text);
+      // User responded but didn't confirm — stop waiting so "yes" later doesn't misfire
+      awaitingCallbackConfirm = false;
     }
 
-    sendBtn.addEventListener("click", handleSend);
-    inputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleSend();
-      }
-    });
+    if (leadMode !== "idle" && lower.includes("skip")) {
+      addMessage(
+        "No worries — we won’t collect any more details. You can still ask me about hours, services, or pricing.",
+        "bot"
+      );
+      leadMode = "idle";
+      leadDraft = { name: "", phone: "", message: "" };
+      return;
+    }
 
-    leadBtn.addEventListener("click", startLeadFlow);
+    if (leadMode === "collect_name") {
+      leadDraft.name = text;
+      leadMode = "collect_phone";
+      addMessage(`Nice to meet you, ${leadDraft.name}! What’s the best phone number to reach you?`, "bot");
+      return;
+    }
 
-    launcherEl.addEventListener("click", () => {
-      const isOpen = chatContainer.style.display === "flex";
-      if (isOpen) {
-        chatContainer.style.display = "none";
-      } else {
-        chatContainer.style.display = "flex";
-        inputEl.focus();
-      }
-    });
+    if (leadMode === "collect_phone") {
+      leadDraft.phone = text;
+      leadMode = "collect_msg";
+      addMessage(
+        "Got it — lastly, what is this about? (for example: repair, install, estimate, or a general question)",
+        "bot"
+      );
+      return;
+    }
 
-    closeEl.addEventListener("click", () => {
+    if (leadMode === "collect_msg") {
+      leadDraft.message = text;
+      addMessage("Thanks! I’m sending your details to the office now…", "bot");
+      sendLeadToBackend(leadDraft);
+      leadMode = "idle";
+      leadDraft = { name: "", phone: "", message: "" };
+      return;
+    }
+
+    if (shouldStartLeadFlow(lower)) {
+      startLeadFlow();
+      return;
+    }
+
+    sendToBackend(text);
+  }
+
+  sendBtn.addEventListener("click", handleSend);
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSend();
+    }
+  });
+
+  leadBtn.addEventListener("click", startLeadFlow);
+
+  launcherEl.addEventListener("click", () => {
+    const isOpen = chatContainer.style.display === "flex";
+    if (isOpen) {
       chatContainer.style.display = "none";
-    });
-  </script>
+    } else {
+      chatContainer.style.display = "flex";
+      inputEl.focus();
+    }
+  });
+
+  closeEl.addEventListener("click", () => {
+    chatContainer.style.display = "none";
+  });
+</script>
 </body>
 </html>
